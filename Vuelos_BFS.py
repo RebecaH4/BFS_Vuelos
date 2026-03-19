@@ -1,7 +1,7 @@
 # Vuelos con busqueda en amplitud
 
 from arbol import Nodo
-from flask import Flask, request # type: ignore
+from flask import Flask, request
 
 app = Flask(__name__)
 
