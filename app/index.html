@@ -1,13 +1,350 @@
 <!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>app</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<html lang="es">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Rutas de Vuelos - BFS</title>
+	<style>
+		:root {
+			--primary: #2e7d32;
+			--primary-light: #c8e6c9;
+			--accent: #5d4037;
+			--bg-body: #eceff1;
+			--surface: #ffffff;
+			--text-main: #263238;
+			--text-light: #eceff1;
+			--border: #cfd8dc;
+		}
+
+		* {
+			box-sizing: border-box;
+		}
+
+		body {
+			margin: 0;
+			min-height: 100vh;
+			font-family: 'Segoe UI', system-ui, sans-serif;
+			background-color: var(--bg-body);
+			background: linear-gradient(135deg, #e8f5e9 0%, #d7ccc8 100%);
+			color: var(--text-main);
+			display: grid;
+			place-items: center;
+			padding: 20px;
+		}
+
+		.app {
+			width: 100%;
+			max-width: 900px;
+			background: var(--surface);
+			border-radius: 20px;
+			box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+			overflow: hidden;
+			display: grid;
+			grid-template-columns: 350px 1fr;
+			animation: slideUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+		}
+
+		@keyframes slideUp {
+			from {
+				opacity: 0;
+				transform: translateY(40px);
+			}
+			to {
+				opacity: 1;
+				transform: translateY(0);
+			}
+		}
+
+		.header {
+			background: var(--primary);
+			color: white;
+			padding: 40px;
+			display: flex;
+			flex-direction: column;
+			justify-content: center;
+			position: relative;
+			overflow: hidden;
+		}
+
+		/* Círculo decorativo */
+		.header::after {
+			content: '';
+			position: absolute;
+			top: -60px;
+			right: -60px;
+			width: 200px;
+			height: 200px;
+			background: rgba(255, 255, 255, 0.1);
+			border-radius: 50%;
+		}
+
+		.eyebrow {
+			margin: 0 0 10px;
+			letter-spacing: 2px;
+			text-transform: uppercase;
+			color: #a5d6a7;
+			font-size: 0.75rem;
+			font-weight: 600;
+		}
+
+		h1 {
+			margin: 0 0 16px;
+			font-family: 'Georgia', serif;
+			font-size: 2.5rem;
+			line-height: 1.1;
+			font-weight: normal;
+		}
+
+		.subtitle {
+			margin: 0;
+			font-size: 0.95rem;
+			line-height: 1.6;
+			color: #c8e6c9;
+		}
+
+		.content {
+			padding: 40px;
+			display: flex;
+			flex-direction: column;
+			gap: 24px;
+		}
+
+		.fields {
+			display: grid;
+			grid-template-columns: 1fr;
+			gap: 20px;
+		}
+
+		label {
+			display: grid;
+			gap: 8px;
+			font-weight: 600;
+			font-size: 0.85rem;
+			color: var(--accent);
+		}
+
+		input {
+			width: 100%;
+			padding: 14px 16px;
+			background: #f1f8e9;
+			border: 2px solid transparent;
+			border-radius: 8px;
+			font-size: 1rem;
+			color: var(--primary);
+			font-weight: 600;
+			transition: all 0.2s;
+		}
+
+		input:focus {
+			outline: none;
+			background: white;
+			border-color: var(--primary);
+			box-shadow: 0 4px 12px rgba(46, 125, 50, 0.1);
+		}
+
+		.actions {
+			display: flex;
+			gap: 16px;
+			margin-top: 10px;
+		}
+
+		button {
+			border: 0;
+			border-radius: 8px;
+			padding: 14px 24px;
+			font-size: 0.95rem;
+			font-weight: 600;
+			cursor: pointer;
+			transition: transform 0.1s;
+		}
+
+		button:active {
+			transform: scale(0.98);
+		}
+
+		.btn-primary {
+			background: var(--accent);
+			color: #fff;
+			box-shadow: 0 4px 10px rgba(93, 64, 55, 0.3);
+			flex: 1;
+		}
+
+		.btn-secondary {
+			background: white;
+			color: var(--accent);
+			border: 2px solid var(--accent);
+		}
+
+		button:disabled {
+			opacity: 0.65;
+		}
+
+		.message {
+			padding: 12px;
+			border-radius: 8px;
+			font-size: 0.9rem;
+			margin-top: 10px;
+			text-align: center;
+			font-weight: 500;
+		}
+
+		.message.ok {
+			background: #e8f5e9;
+			color: #2e7d32;
+		}
+
+		.message.error {
+			background: #ffebee;
+			color: #c62828;
+		}
+
+		.result {
+			margin-top: 20px;
+		}
+
+		.result h2 {
+			font-size: 0.8rem;
+			text-transform: uppercase;
+			letter-spacing: 1px;
+			color: var(--border);
+			border-bottom: 1px solid var(--border);
+			padding-bottom: 10px;
+			margin: 0 0 20px;
+		}
+
+		.route {
+			display: flex;
+			flex-direction: column;
+			padding-left: 10px;
+		}
+
+		.chip {
+			background: white;
+			color: var(--text-main);
+			padding: 12px 16px;
+			border-radius: 12px;
+			border: 1px solid var(--border);
+			font-weight: 600;
+			position: relative;
+			margin-bottom: 15px;
+			margin-left: 20px;
+			box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+			animation: fadeIn 0.4s ease backwards;
+		}
+
+		/* Punto en la línea de tiempo */
+		.chip::before {
+			content: '';
+			position: absolute;
+			left: -26px;
+			top: 50%;
+			width: 12px;
+			height: 12px;
+			background: var(--primary);
+			border: 2px solid white;
+			outline: 2px solid var(--primary);
+			border-radius: 50%;
+			transform: translateY(-50%);
+			z-index: 2;
+		}
+
+		/* Línea conectora */
+		.chip:not(:last-child)::after {
+			content: '';
+			position: absolute;
+			left: -21px;
+			top: 50%;
+			height: calc(100% + 15px);
+			width: 2px;
+			background: var(--primary-light);
+			z-index: 1;
+		}
+
+		.arrow {
+			display: none;
+		}
+
+		@keyframes fadeIn {
+			from {
+				opacity: 0;
+				transform: translateX(-10px);
+			}
+			to {
+				opacity: 1;
+				transform: translateX(0);
+			}
+		}
+
+		@media (max-width: 768px) {
+			.app {
+				grid-template-columns: 1fr;
+				max-width: 500px;
+			}
+			.header {
+				padding: 30px 20px;
+				text-align: center;
+			}
+			.header::after {
+				display: none;
+			}
+			.content {
+				padding: 30px 20px;
+			}
+		}
+	</style>
+</head>
+<body>
+	<main class="app">
+		<header class="header">
+			<p class="eyebrow">Busqueda en amplitud</p>
+			<h1>Calculador de Rutas de Vuelo</h1>
+			<p class="subtitle">Ingresa ciudad de origen y destino para encontrar una ruta valida usando BFS.</p>
+		</header>
+
+		<section class="content">
+			<form id="ruta-form" novalidate>
+				<div class="fields">
+					<label for="inicio">
+						Ciudad de inicio
+						<input id="inicio" name="inicio" list="ciudades" placeholder="Ej. Jilotepec" autocomplete="off" required />
+					</label>
+
+					<label for="final">
+						Ciudad destino
+						<input id="final" name="final" list="ciudades" placeholder="Ej. Monterrey" autocomplete="off" required />
+					</label>
+				</div>
+
+				<datalist id="ciudades">
+					<option value="Aguascalientes"></option>
+					<option value="CDMX"></option>
+					<option value="Celaya"></option>
+					<option value="Guanajuato"></option>
+					<option value="Jilotepec"></option>
+					<option value="Monterrey"></option>
+					<option value="Oaxaca"></option>
+					<option value="Queretaro"></option>
+					<option value="Sinaloa"></option>
+					<option value="Sonora"></option>
+					<option value="Tamaulipas"></option>
+					<option value="Zacatecas"></option>
+				</datalist>
+
+				<div class="actions" style="margin-top: 14px;">
+					<button class="btn-primary" id="calcular-btn" type="submit">Calcular ruta</button>
+					<button class="btn-secondary" id="limpiar-btn" type="button">Limpiar</button>
+				</div>
+			</form>
+
+			<p id="mensaje" class="message" aria-live="polite"></p>
+
+			<article class="result">
+				<h2>Ruta encontrada</h2>
+				<div id="ruta" class="route" aria-live="polite"></div>
+			</article>
+		</section>
+	</main>
+
+	<script src="./main.js" defer></script>
+</body>
 </html>
