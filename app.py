@@ -2,25 +2,29 @@
 
 from arbol import Nodo
 from flask import Flask, request
+from flask_cors import CORS
+import os
 
 app = Flask(__name__)
+CORS(app)
 
-def buscar_solucion_BFS(conexiones, estado_inicial,solucion):
+
+def buscar_solucion(conexiones, estado_inicial, solucion):
     solucionado = False
     nodos_visitados = []
     nodos_frontera = []
     nodo_inicial = Nodo(estado_inicial)
     nodos_frontera.append(nodo_inicial)
-    while (not solucionado) and len(nodos_frontera) != 0:
+    while not solucionado and len(nodos_frontera):
         nodo = nodos_frontera[0]
-        # Extraer nodo y añadirlo a visitados
+        # Extraer nodo y agregarlo a visitados
         nodos_visitados.append(nodos_frontera.pop(0))
         if nodo.get_datos() == solucion:
             # Solucion encontrada
             solucionado = True
             return nodo
         else:
-            # Expandir nodos hijo (cuidades con conexion)
+            # Expandir nodos hijo (ciudades con conexion)
             dato_nodo = nodo.get_datos()
             lista_hijos = []
             for un_hijo in conexiones[dato_nodo]:
@@ -28,7 +32,9 @@ def buscar_solucion_BFS(conexiones, estado_inicial,solucion):
                 lista_hijos.append(hijo)
                 if not hijo.en_lista(nodos_visitados) and not hijo.en_lista(nodos_frontera):
                     nodos_frontera.append(hijo)
+
             nodo.set_hijos(lista_hijos)
+
 
 @app.route('/calcular', methods=['POST'])
 def calcular():
@@ -53,7 +59,7 @@ def calcular():
     }
     estado_inicial = inicio
     solucion = final
-    nodo_solucion = buscar_solucion_BFS(conexiones, estado_inicial, solucion)
+    nodo_solucion = buscar_solucion(conexiones, estado_inicial, solucion)
     # Mostrar resultado
     resultado = []
     nodo = nodo_solucion
@@ -67,4 +73,4 @@ def calcular():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0')
